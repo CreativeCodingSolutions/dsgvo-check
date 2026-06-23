@@ -11,6 +11,8 @@ const checkLabels: Record<string, string> = {
   cookieBanner: "Cookie-Banner (TTDSG)",
   kontaktdaten: "Kontaktdaten / Adresse",
   ssl: "SSL-Verschlüsselung (HTTPS)",
+  agb: "AGB / Allgemeine Geschäftsbedingungen",
+  widerruf: "Widerrufsbelehrung (B2C)",
 };
 
 export default function Home() {

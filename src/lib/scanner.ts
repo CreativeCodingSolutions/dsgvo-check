@@ -7,6 +7,8 @@ export interface ScanResult {
     cookieBanner: CheckResult;
     kontaktdaten: CheckResult;
     ssl: CheckResult;
+    agb: CheckResult;
+    widerruf: CheckResult;
   };
   details: string[];
   error?: string;
@@ -147,6 +149,46 @@ export async function scanWebsite(inputUrl: string): Promise<ScanResult> {
       };
     })();
 
+    const agbCheck: CheckResult = (() => {
+      const foundInLink = links.some(
+        (l) =>
+          l.href.includes("agb") ||
+          l.href.includes("terms") ||
+          l.href.includes("allgemeine-geschaeftsbedingungen") ||
+          l.text.includes("agb") ||
+          l.text.includes("allgemeine geschäftsbedingungen") ||
+          l.text.includes("terms")
+      );
+      const foundInText = /agb|allgemeine geschäftsbedingungen|terms and conditions/i.test(text);
+      return {
+        found: foundInLink || foundInText,
+        passed: foundInLink || foundInText,
+        detail: (foundInLink || foundInText)
+          ? "AGB-Seite gefunden"
+          : "Keine AGB gefunden (optional, nur bei kostenpflichtigen Angeboten)",
+      };
+    })();
+
+    const widerrufCheck: CheckResult = (() => {
+      const foundInLink = links.some(
+        (l) =>
+          l.href.includes("widerruf") ||
+          l.href.includes("widerrufsbelehrung") ||
+          l.href.includes("withdrawal") ||
+          l.text.includes("widerruf") ||
+          l.text.includes("widerrufsbelehrung") ||
+          l.text.includes("withdrawal")
+      );
+      const foundInText = /widerruf|widerrufsbelehrung/i.test(text);
+      return {
+        found: foundInLink || foundInText,
+        passed: foundInLink || foundInText,
+        detail: (foundInLink || foundInText)
+          ? "Widerrufsbelehrung gefunden"
+          : "Keine Widerrufsbelehrung gefunden (optional, nur bei B2C)",
+      };
+    })();
+
     const sslCheck: CheckResult = {
       found: url.startsWith("https://"),
       passed: url.startsWith("https://"),
@@ -161,11 +203,13 @@ export async function scanWebsite(inputUrl: string): Promise<ScanResult> {
       cookieBannerCheck,
       kontaktdatenCheck,
       sslCheck,
+      agbCheck,
+      widerrufCheck,
     ];
     const passedCount = checks.filter((c) => c.passed).length;
     const score = Math.round((passedCount / checks.length) * 100);
 
-    return { url, score, checks: { impressum: impressumCheck, datenschutz: datenschutzCheck, cookieBanner: cookieBannerCheck, kontaktdaten: kontaktdatenCheck, ssl: sslCheck }, details };
+    return { url, score, checks: { impressum: impressumCheck, datenschutz: datenschutzCheck, cookieBanner: cookieBannerCheck, kontaktdaten: kontaktdatenCheck, ssl: sslCheck, agb: agbCheck, widerruf: widerrufCheck }, details };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unbekannter Fehler";
     return {
@@ -177,6 +221,8 @@ export async function scanWebsite(inputUrl: string): Promise<ScanResult> {
         cookieBanner: { passed: false, found: false, detail: "Nicht geprüft" },
         kontaktdaten: { passed: false, found: false, detail: "Nicht geprüft" },
         ssl: { passed: false, found: false, detail: "Nicht geprüft" },
+        agb: { passed: false, found: false, detail: "Nicht geprüft" },
+        widerruf: { passed: false, found: false, detail: "Nicht geprüft" },
       },
       details: [],
       error: message,
